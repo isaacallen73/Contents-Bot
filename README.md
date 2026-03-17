@@ -54,10 +54,37 @@ All settings live in `config.json` (auto-created, git-ignored):
 |---|---|
 | `anthropic_api_key` | Required. Claude API key from console.anthropic.com |
 | `model` | Claude model to use (default: `claude-haiku-4-5`) |
+| `google_oauth_client_id` | Required for login. Google OAuth client ID |
+| `google_oauth_client_secret` | Required for login. Google OAuth client secret |
 | `google_search_api_key` | Optional. Enables "Search Prices" feature |
 | `google_search_cx` | Optional. Google Custom Search Engine ID |
 
 You can also change the model in the app's **Settings** screen (gear icon on home page). Haiku is recommended — it's significantly cheaper for high-volume jobs.
+
+---
+
+## Google OAuth Setup
+
+The app requires a `@liberty-restoration.com` Google account to log in. One-time setup per machine:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com) and create a project (or use an existing one).
+2. Navigate to **APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID**.
+3. Set **Application type** to **Web application**.
+4. Under **Authorized redirect URIs**, add: `http://localhost:5000/auth/callback`
+5. Copy the **Client ID** and **Client Secret**.
+6. Add them to `config.json`:
+   ```json
+   {
+     "google_oauth_client_id": "...",
+     "google_oauth_client_secret": "..."
+   }
+   ```
+
+Users must sign in with a `@liberty-restoration.com` Google account. Anyone else is blocked.
+
+### Usage Tracking
+
+Every login, session, and export is logged to `usage/usage_log.jsonl`. To view a summary, visit `http://localhost:5000/api/usage` while logged in.
 
 ---
 

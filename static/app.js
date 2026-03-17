@@ -22,6 +22,10 @@ async function api(method, path, body) {
   };
   if (body !== undefined) opts.body = JSON.stringify(body);
   const res = await fetch(path, opts);
+  if (res.status === 401) {
+    window.location.href = '/login';
+    return;
+  }
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try { msg = (await res.json()).error || msg; } catch (_) {}
@@ -98,6 +102,13 @@ function populateModelSelect(selectId, models, current) {
 }
 
 async function init() {
+  // Show user info in header from server-injected context
+  const u = window.CURRENT_USER || {};
+  if (u.picture) {
+    const av = document.getElementById('header-avatar');
+    if (av) { av.src = u.picture; av.style.display = 'block'; }
+  }
+
   try {
     const cfg = await api('GET', '/api/config');
     priceSearchEnabled = cfg.has_anthropic_key;

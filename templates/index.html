@@ -18,8 +18,15 @@
   <div class="header-title" id="header-title">Inventory Bot</div>
   <div class="header-actions">
     <button class="btn-ghost" id="btn-home" onclick="goHome()" title="Home">&#8962; Home</button>
+    <div class="header-user">
+      <img class="header-avatar" id="header-avatar" src="{{ user.picture | default('') }}" alt="">
+      <span class="header-user-name" id="header-user-name">{{ user.name | default('') }}</span>
+      <a href="/logout" class="btn-ghost btn-small header-signout">Sign Out</a>
+    </div>
   </div>
 </header>
+
+<script>window.CURRENT_USER = {{ user | tojson }};</script>
 
 <!-- ══════════════════════ STEP INDICATOR ════════════════════════════════ -->
 <div id="step-indicator" class="hidden">

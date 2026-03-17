@@ -4,6 +4,9 @@ config.json
 # User session data
 sessions/
 
+# Usage logs (contain user email addresses)
+usage/
+
 # Sample/test photos and outputs
 Sample 1/
 Test/

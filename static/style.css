@@ -146,7 +146,44 @@ input:focus { border-color: var(--navy); }
   opacity: 0.9;
 }
 
-.header-actions { flex: 0 0 auto; }
+.header-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255,255,255,0.25);
+}
+
+.header-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: none;
+  border: 1.5px solid rgba(255,255,255,0.5);
+}
+
+.header-user-name {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-signout {
+  font-size: 12px;
+  opacity: 0.8;
+  text-decoration: none;
+}
 
 /* ── Step Indicator ────────────────────────────────────────────────────── */
 #step-indicator {
