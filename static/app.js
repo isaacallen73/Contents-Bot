@@ -672,7 +672,109 @@ function buildRow(item) {
           onchange="quickSave(this)"
           onblur="quickSave(this)">
       </td>
+      <td class="col-actions">
+        <div class="row-actions">
+          <button class="row-action-btn" onclick="splitItem('${escHtml(item.id)}')" title="Split: add a second item from this same photo">&#9986;</button>
+          <button class="row-action-btn" onclick="mergeWithNext('${escHtml(item.id)}')" title="Merge with the row below">&#8853;</button>
+          <button class="row-action-btn${item.flagged ? ' row-action-flagged' : ''}" onclick="flagItem('${escHtml(item.id)}')" title="${item.flagged ? 'Flagged for review' : 'Flag: AI got this wrong'}">&#9873;</button>
+          <button class="row-action-btn row-action-delete" onclick="deleteItem('${escHtml(item.id)}')" title="Remove from inventory">&#215;</button>
+        </div>
+      </td>
     </tr>`;
+}
+
+// ── Row actions ───────────────────────────────────────────────────────────────
+
+async function deleteItem(itemId) {
+  if (!confirm('Remove this item from the inventory?')) return;
+  try {
+    await api('DELETE', `/api/sessions/${currentSessionId}/items/${itemId}`);
+    allItems = allItems.filter(i => i.id !== itemId);
+    renderReviewTable();
+    showToast('Item removed', 'info');
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function splitItem(itemId) {
+  try {
+    const res = await api('POST', `/api/sessions/${currentSessionId}/items/${itemId}/split`);
+    const newItem = res.item;
+    const idx = allItems.findIndex(i => i.id === itemId);
+    if (idx !== -1) allItems.splice(idx + 1, 0, newItem);
+    else allItems.push(newItem);
+    renderReviewTable();
+    showToast('Row split \u2014 fill in the new row\u2019s details', 'info', 4000);
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function mergeWithNext(itemId) {
+  const filtered = getFilteredItems();
+  const idx = filtered.findIndex(i => i.id === itemId);
+  if (idx === -1 || idx >= filtered.length - 1) {
+    showToast('No next item to merge with', 'info');
+    return;
+  }
+  const nextItem = filtered[idx + 1];
+  const nextLabel = nextItem.item || nextItem.primary_photo || 'next item';
+  if (!confirm(`Merge with "${nextLabel}"?\n\nThe rows below will be combined. Fields from this row are kept.`)) return;
+  try {
+    const res = await api('POST', `/api/sessions/${currentSessionId}/items/merge`, {
+      keep_id: itemId,
+      remove_id: nextItem.id,
+    });
+    // Update local state
+    allItems = allItems.filter(i => i.id !== nextItem.id);
+    const keepItem = allItems.find(i => i.id === itemId);
+    if (keepItem && res.item) Object.assign(keepItem, res.item);
+    renderReviewTable();
+    showToast('Rows merged', 'success');
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+function flagItem(itemId) {
+  const item = allItems.find(i => i.id === itemId);
+  if (!item) return;
+
+  const existing = document.getElementById('flag-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'flag-modal';
+  modal.className = 'flag-modal-overlay';
+  modal.innerHTML = `
+    <div class="flag-modal-box">
+      <h3 class="flag-modal-title">Flag Analysis Issue</h3>
+      <p class="flag-modal-item">"${escHtml(item.item || item.primary_photo)}"</p>
+      <label class="flag-modal-label">What's wrong with this result? <span style="color:#999">(optional)</span></label>
+      <textarea id="flag-note" class="flag-textarea" placeholder="e.g. Identified wrong item, missed the brand, background object picked up..." rows="3"></textarea>
+      <div class="flag-modal-actions">
+        <button class="btn-secondary btn-small" onclick="document.getElementById('flag-modal').remove()">Cancel</button>
+        <button class="btn-primary btn-small" onclick="submitFlag('${escHtml(itemId)}')">Submit Flag</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  setTimeout(() => { const ta = document.getElementById('flag-note'); if (ta) ta.focus(); }, 50);
+}
+
+async function submitFlag(itemId) {
+  const note = (document.getElementById('flag-note') || {}).value || '';
+  try {
+    await api('POST', `/api/sessions/${currentSessionId}/items/${itemId}/flag`, { note });
+    document.getElementById('flag-modal').remove();
+    const item = allItems.find(i => i.id === itemId);
+    if (item) item.flagged = true;
+    renderReviewTable();
+    showToast('Feedback recorded \u2014 thank you', 'success');
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
 }
 
 // Set up editable cell click handler via delegation (call once after render)

@@ -7,6 +7,9 @@ sessions/
 # Usage logs (contain user email addresses)
 usage/
 
+# Feedback logs
+feedback/
+
 # Sample/test photos and outputs
 Sample 1/
 Test/
@@ -34,4 +37,4 @@ Thumbs.db
 # PyInstaller build artifacts
 build/
 dist/
-*.spec
+# Note: InventoryBot.spec is tracked (hand-crafted) — only ignore auto-generated ones

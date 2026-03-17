@@ -974,6 +974,112 @@ input:focus { border-color: var(--navy); }
 }
 .lightbox-close:hover { background: var(--red); }
 
+/* ── Row Actions ────────────────────────────────────────────────────────── */
+.col-actions { width: 88px; text-align: center; padding: 4px 6px !important; }
+
+.row-actions {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  align-items: center;
+}
+
+.row-action-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--mid-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.row-action-btn:hover {
+  color: var(--navy);
+  background: #eef;
+  border-color: var(--light-gray);
+}
+.row-action-flagged {
+  color: var(--red) !important;
+}
+.row-action-flagged:hover {
+  background: #fff0f0 !important;
+  border-color: #fcc !important;
+}
+.row-action-delete:hover {
+  color: var(--red) !important;
+  background: #fff0f0 !important;
+  border-color: #fcc !important;
+}
+
+/* ── Flag Modal ─────────────────────────────────────────────────────────── */
+.flag-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.flag-modal-box {
+  background: var(--white);
+  border-radius: 10px;
+  padding: 28px 28px 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+}
+
+.flag-modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 6px;
+}
+
+.flag-modal-item {
+  font-size: 13px;
+  color: #555;
+  margin: 0 0 16px;
+  font-style: italic;
+}
+
+.flag-modal-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.flag-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--light-gray);
+  border-radius: var(--radius);
+  font-family: 'Roboto', sans-serif;
+  font-size: 13px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.flag-textarea:focus { border-color: var(--navy); }
+
+.flag-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
 /* ── Toast ─────────────────────────────────────────────────────────────── */
 .toast {
   position: fixed;

@@ -1,5 +1,6 @@
 import json
 import uuid
+import sys
 import threading
 import time
 import queue
@@ -16,21 +17,33 @@ from flask import (Flask, request, jsonify, render_template, send_file,
                    session as flask_session, redirect, url_for, g)
 from authlib.integrations.flask_client import OAuth
 
-app = Flask(__name__)
+# ── Paths — handle PyInstaller --onefile bundle ───────────────────────────────
+if getattr(sys, 'frozen', False):
+    BUNDLE_DIR = Path(sys._MEIPASS)   # bundled app files (templates, static)
+    BASE_DIR   = Path(sys.executable).parent  # writable data dir next to .exe
+else:
+    BUNDLE_DIR = Path(__file__).parent
+    BASE_DIR   = Path(__file__).parent
+
+app = Flask(__name__,
+    template_folder=str(BUNDLE_DIR / 'templates'),
+    static_folder=str(BUNDLE_DIR / 'static'))
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 
-BASE_DIR    = Path(__file__).parent
-SESSIONS_DIR = BASE_DIR / 'sessions'
-CONFIG_FILE  = BASE_DIR / 'config.json'
+SESSIONS_DIR  = BASE_DIR / 'sessions'
+CONFIG_FILE   = BASE_DIR / 'config.json'
+FEEDBACK_DIR  = BASE_DIR / 'feedback'
 
 SESSIONS_DIR.mkdir(exist_ok=True)
+FEEDBACK_DIR.mkdir(exist_ok=True)
 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp', '.bmp', '.tiff', '.tif'}
 
 ALLOWED_DOMAIN = 'liberty-restoration.com'
 USAGE_DIR      = BASE_DIR / 'usage'
 USAGE_DIR.mkdir(exist_ok=True)
-_usage_lock = threading.Lock()
+_usage_lock    = threading.Lock()
+_feedback_lock = threading.Lock()
 
 # ── Persistent secret key ─────────────────────────────────────────────────────
 
@@ -46,7 +59,6 @@ oauth = OAuth(app)
 _google_registered = False
 
 def _ensure_google_oauth():
-    """Lazy-register the Google OAuth client using current config values."""
     global _google_registered
     if _google_registered:
         return True
@@ -191,16 +203,15 @@ def get_usage():
             except Exception:
                 pass
 
-    # Per-user summary
     summary = {}
     for e in entries:
         em = e.get('email', 'unknown')
         s = summary.setdefault(em, {'logins': 0, 'sessions': 0, 'items_processed': 0, 'exports': 0})
         a = e.get('action', '')
-        if a == 'login':           s['logins'] += 1
-        elif a == 'session_created': s['sessions'] += 1
+        if a == 'login':               s['logins'] += 1
+        elif a == 'session_created':   s['sessions'] += 1
         elif a == 'processing_completed': s['items_processed'] += e.get('item_count', 0)
-        elif a == 'export':        s['exports'] += 1
+        elif a == 'export':            s['exports'] += 1
 
     return jsonify({'entries': entries[-500:], 'summary': summary})
 
@@ -542,6 +553,83 @@ def update_item(session_id, item_id):
                     item[field] = data[field]
             item['status'] = 'reviewed'
             break
+    save_items(session_id, items)
+    return jsonify({'ok': True})
+
+@app.route('/api/sessions/<session_id>/items/<item_id>', methods=['DELETE'])
+@require_login
+def delete_item(session_id, item_id):
+    items = load_items(session_id)
+    items = [i for i in items if i['id'] != item_id]
+    save_items(session_id, items)
+    return jsonify({'ok': True})
+
+@app.route('/api/sessions/<session_id>/items/<item_id>/split', methods=['POST'])
+@require_login
+def split_item(session_id, item_id):
+    items = load_items(session_id)
+    idx = next((i for i, item in enumerate(items) if item['id'] == item_id), None)
+    if idx is None:
+        return jsonify({'error': 'Item not found'}), 404
+    original = items[idx]
+    new_id = item_id + '_s' + str(int(time.time()))[-5:]
+    copy = {
+        **original,
+        'id': new_id,
+        'item': '',
+        'manufacturer': '',
+        'model_serial': '',
+        'quantity': 1,
+        'price': None,
+        'age': None,
+        'price_suggestions': [],
+        'status': 'reviewed',
+        'confidence': {'overall': 0.5, 'flags': ['Manually split \u2014 fill in details']},
+        'flagged': False,
+    }
+    items.insert(idx + 1, copy)
+    save_items(session_id, items)
+    return jsonify({'item': copy})
+
+@app.route('/api/sessions/<session_id>/items/merge', methods=['POST'])
+@require_login
+def merge_items(session_id):
+    data = request.json or {}
+    keep_id   = data.get('keep_id')
+    remove_id = data.get('remove_id')
+    items = load_items(session_id)
+    keep   = next((i for i in items if i['id'] == keep_id), None)
+    remove = next((i for i in items if i['id'] == remove_id), None)
+    if not keep or not remove:
+        return jsonify({'error': 'Item not found'}), 404
+    extra_photos = [p for p in (remove.get('photos') or []) if p not in (keep.get('photos') or [])]
+    keep['photos'] = (keep.get('photos') or []) + extra_photos
+    items = [i for i in items if i['id'] != remove_id]
+    save_items(session_id, items)
+    return jsonify({'ok': True, 'item': keep})
+
+@app.route('/api/sessions/<session_id>/items/<item_id>/flag', methods=['POST'])
+@require_login
+def flag_item(session_id, item_id):
+    data = request.json or {}
+    items = load_items(session_id)
+    item = next((i for i in items if i['id'] == item_id), None)
+    if not item:
+        return jsonify({'error': 'Item not found'}), 404
+
+    entry = {
+        'timestamp': datetime.now().isoformat(),
+        'user': g.current_user.get('email', 'unknown'),
+        'session_id': session_id,
+        'item_id': item_id,
+        'item_data': {k: v for k, v in item.items() if k != 'price_suggestions'},
+        'note': data.get('note', ''),
+    }
+    with _feedback_lock:
+        with open(FEEDBACK_DIR / 'feedback_log.jsonl', 'a', encoding='utf-8') as f:
+            f.write(json.dumps(entry) + '\n')
+
+    item['flagged'] = True
     save_items(session_id, items)
     return jsonify({'ok': True})
 
