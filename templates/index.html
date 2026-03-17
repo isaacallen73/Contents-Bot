@@ -13,8 +13,7 @@
 <!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
 <header id="app-header" class="hidden">
   <div class="header-brand">
-    <span class="brand-chevron">&#9650;&#9650;</span>
-    <span class="brand-name">LIBERTY <span class="brand-sub">RESTORATION</span></span>
+    <img class="header-logo" src="/static/img/logo.jpg" alt="Liberty Restoration">
   </div>
   <div class="header-title" id="header-title">Inventory Bot</div>
   <div class="header-actions">
@@ -28,9 +27,7 @@
   <div class="step-line"></div>
   <div class="step" id="step-2"><span class="step-num">2</span><span class="step-label">Group</span></div>
   <div class="step-line"></div>
-  <div class="step" id="step-3"><span class="step-num">3</span><span class="step-label">Process</span></div>
-  <div class="step-line"></div>
-  <div class="step" id="step-4"><span class="step-num">4</span><span class="step-label">Review</span></div>
+  <div class="step" id="step-3"><span class="step-num">3</span><span class="step-label">Review</span></div>
 </div>
 
 <!-- ════════════════════════════ SCREENS ════════════════════════════════ -->
@@ -40,11 +37,7 @@
   <div id="screen-setup" class="screen">
     <div class="setup-card">
       <div class="setup-logo">
-        <span class="setup-chevron">&#9650;&#9650;</span>
-        <div class="setup-brand-text">
-          <span class="setup-liberty">LIBERTY</span>
-          <span class="setup-restoration">RESTORATION</span>
-        </div>
+        <img class="setup-logo-img" src="/static/img/logo.jpg" alt="Liberty Restoration">
       </div>
       <h1>Inventory Bot</h1>
       <p class="setup-subtitle">Enter your Anthropic API key to get started.</p>
@@ -64,11 +57,7 @@
   <div id="screen-home" class="screen">
     <div class="home-hero">
       <div class="home-logo">
-        <span class="home-chevron">&#9650;&#9650;</span>
-        <div class="home-brand-text">
-          <span class="home-liberty">LIBERTY</span>
-          <span class="home-restoration">RESTORATION</span>
-        </div>
+        <img class="home-logo-img" src="/static/img/logo.jpg" alt="Liberty Restoration">
       </div>
       <h1 class="home-title">Inventory Bot</h1>
       <button class="btn-primary btn-xlarge" onclick="startNew()">
@@ -157,48 +146,15 @@
       <div class="filmstrip" id="filmstrip"></div>
     </div>
 
+    <div class="group-cost-bar">
+      <span id="group-cost-estimate" class="group-cost-text"></span>
+    </div>
     <div class="btn-row btn-row-bottom">
       <button class="btn-secondary" onclick="goHome()">&#8592; Back</button>
-      <button class="btn-primary" onclick="confirmGroups()">Continue to Process &#8594;</button>
+      <button class="btn-primary" id="btn-start-processing" onclick="confirmGroups()">Start Processing &#8594;</button>
     </div>
   </div>
 
-  <!-- ── PROCESS ── -->
-  <div id="screen-process" class="screen">
-    <div class="screen-card process-card">
-      <h1>Process Items</h1>
-
-      <div id="process-ready">
-        <div class="process-estimate" id="process-estimate"></div>
-        <p class="screen-hint">
-          Claude AI will identify each item and extract any visible product information.
-          This runs automatically — just click Start.
-        </p>
-        <button class="btn-primary btn-large" onclick="startProcessing()">Start Processing</button>
-      </div>
-
-      <div id="process-running" class="hidden">
-        <div class="process-current-wrap">
-          <img id="process-current-thumb" class="process-thumb" src="" alt="">
-          <div>
-            <div class="process-status-label">Identifying...</div>
-            <div class="process-item-label" id="process-item-label">—</div>
-          </div>
-        </div>
-        <div class="progress-bar-wrap">
-          <div class="progress-bar" id="progress-bar" style="width:0%"></div>
-        </div>
-        <div class="progress-text" id="progress-text">0 of 0</div>
-      </div>
-
-      <div id="process-done" class="hidden">
-        <div class="process-done-msg">&#10003; Processing complete!</div>
-        <button class="btn-primary btn-large" onclick="goToReview()">Review Items &#8594;</button>
-      </div>
-
-      <div id="process-error" class="error-msg hidden"></div>
-    </div>
-  </div>
 
   <!-- ── REVIEW ── -->
   <div id="screen-review" class="screen">

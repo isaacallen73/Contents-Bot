@@ -35,16 +35,16 @@ function showScreen(id) {
   const el = document.getElementById('screen-' + id);
   if (el) el.classList.add('active');
 
-  const headerScreens = ['import', 'group', 'process', 'review', 'settings'];
-  const stepScreens   = ['import', 'group', 'process', 'review'];
+  const headerScreens = ['import', 'group', 'review', 'settings'];
+  const stepScreens   = ['import', 'group', 'review'];
 
   document.getElementById('app-header').classList.toggle('hidden', !headerScreens.includes(id));
   document.getElementById('step-indicator').classList.toggle('hidden', !stepScreens.includes(id));
 
   if (stepScreens.includes(id)) {
-    const steps = { import: 1, group: 2, process: 3, review: 4 };
+    const steps = { import: 1, group: 2, review: 3 };
     const active = steps[id];
-    [1, 2, 3, 4].forEach(n => {
+    [1, 2, 3].forEach(n => {
       const el = document.getElementById('step-' + n);
       el.classList.remove('active', 'done');
       if (n === active) el.classList.add('active');
@@ -306,6 +306,9 @@ function renderFilmstrip() {
 
   document.getElementById('group-counter').textContent = `${workingGroups.length} item${workingGroups.length !== 1 ? 's' : ''}`;
   document.getElementById('group-counter-sub').textContent = `${totalPhotos} photo${totalPhotos !== 1 ? 's' : ''}`;
+  const cost = (totalPhotos * 0.003).toFixed(2);
+  const costEl = document.getElementById('group-cost-estimate');
+  if (costEl) costEl.innerHTML = `Estimated processing cost: <strong>~$${cost}</strong>`;
 
   let html = '';
   workingGroups.forEach((group, gIdx) => {
@@ -356,16 +359,30 @@ function splitGroup(groupIdx, photoIdx) {
 }
 
 async function confirmGroups() {
+  const btn = document.getElementById('btn-start-processing');
+  if (btn) { btn.disabled = true; btn.textContent = 'Starting…'; }
+
   try {
     await api('POST', `/api/sessions/${currentSessionId}/groups`, { groups: workingGroups });
     sessionData.groups = workingGroups;
-    showProcessScreen();
+
+    allItems = [];
+    showScreen('review');
+    document.getElementById('btn-search-all').style.display = priceSearchEnabled ? '' : 'none';
+    currentPage = 1;
+    renderReviewTable();
+    _showProcessingBanner(0, workingGroups.length);
+
+    await api('POST', `/api/sessions/${currentSessionId}/process`);
+    connectProgressSSE();
   } catch (e) {
-    showToast('Error saving groups: ' + e.message, 'error');
+    showToast('Error: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Start Processing →'; }
   }
 }
 
-// ── Process ───────────────────────────────────────────────────────────────────
+// ── Process (removed — confirmGroups() now handles this flow) ─────────────────
+/*
 function showProcessScreen() {
   showScreen('process');
   const count = workingGroups.length || (sessionData && sessionData.groups && sessionData.groups.length) || 0;
@@ -402,6 +419,7 @@ async function startProcessing() {
     if (btn) { btn.disabled = false; btn.textContent = 'Start Processing'; }
   }
 }
+*/
 
 function connectProgressSSE() {
   if (sseSource) sseSource.close();
