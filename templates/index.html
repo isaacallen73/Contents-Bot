@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liberty Restoration — Inventory Bot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
+<header id="app-header" class="hidden">
+  <div class="header-brand">
+    <span class="brand-chevron">&#9650;&#9650;</span>
+    <span class="brand-name">LIBERTY <span class="brand-sub">RESTORATION</span></span>
+  </div>
+  <div class="header-title" id="header-title">Inventory Bot</div>
+  <div class="header-actions">
+    <button class="btn-ghost" id="btn-home" onclick="goHome()" title="Home">&#8962; Home</button>
+  </div>
+</header>
+
+<!-- ══════════════════════ STEP INDICATOR ════════════════════════════════ -->
+<div id="step-indicator" class="hidden">
+  <div class="step" id="step-1"><span class="step-num">1</span><span class="step-label">Import</span></div>
+  <div class="step-line"></div>
+  <div class="step" id="step-2"><span class="step-num">2</span><span class="step-label">Group</span></div>
+  <div class="step-line"></div>
+  <div class="step" id="step-3"><span class="step-num">3</span><span class="step-label">Process</span></div>
+  <div class="step-line"></div>
+  <div class="step" id="step-4"><span class="step-num">4</span><span class="step-label">Review</span></div>
+</div>
+
+<!-- ════════════════════════════ SCREENS ════════════════════════════════ -->
+<main id="main">
+
+  <!-- ── SETUP ── -->
+  <div id="screen-setup" class="screen">
+    <div class="setup-card">
+      <div class="setup-logo">
+        <span class="setup-chevron">&#9650;&#9650;</span>
+        <div class="setup-brand-text">
+          <span class="setup-liberty">LIBERTY</span>
+          <span class="setup-restoration">RESTORATION</span>
+        </div>
+      </div>
+      <h1>Inventory Bot</h1>
+      <p class="setup-subtitle">Enter your Anthropic API key to get started.</p>
+
+      <div class="form-section">
+        <h2>Anthropic API Key <span class="required">*</span></h2>
+        <p class="form-hint">Required for photo analysis and price lookup. Get yours at <strong>console.anthropic.com</strong></p>
+        <input type="password" id="setup-anthropic-key" placeholder="sk-ant-api03-..." autocomplete="off">
+      </div>
+
+      <button class="btn-primary btn-large" onclick="saveSetup()">Save &amp; Continue</button>
+      <div id="setup-error" class="error-msg hidden"></div>
+    </div>
+  </div>
+
+  <!-- ── HOME ── -->
+  <div id="screen-home" class="screen">
+    <div class="home-hero">
+      <div class="home-logo">
+        <span class="home-chevron">&#9650;&#9650;</span>
+        <div class="home-brand-text">
+          <span class="home-liberty">LIBERTY</span>
+          <span class="home-restoration">RESTORATION</span>
+        </div>
+      </div>
+      <h1 class="home-title">Inventory Bot</h1>
+      <button class="btn-primary btn-xlarge" onclick="startNew()">
+        + New Inventory
+      </button>
+    </div>
+
+    <div class="home-sessions" id="home-sessions-wrap">
+      <h2>Recent Sessions</h2>
+      <div id="home-sessions-list"></div>
+    </div>
+
+    <div class="home-footer">
+      <button class="btn-ghost btn-small" onclick="showSettings()">&#9881; Settings</button>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS (overlay panel) ── -->
+  <div id="screen-settings" class="screen">
+    <div class="settings-card">
+      <h1>Settings</h1>
+
+      <div class="form-section">
+        <h2>Anthropic API Key</h2>
+        <input type="password" id="settings-anthropic-key" placeholder="sk-ant-api03-..." autocomplete="off">
+      </div>
+      <div class="form-section">
+        <h2>AI Model</h2>
+        <select id="settings-model" style="width:100%;padding:9px 12px;border:1.5px solid var(--light-gray);border-radius:var(--radius);font-family:Roboto,sans-serif;font-size:14px;background:white;color:var(--black);outline:none;">
+        </select>
+        <p class="form-hint" style="margin-top:6px">Haiku is recommended — it's faster and significantly cheaper for high-volume jobs.</p>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="goHome()">Cancel</button>
+        <button class="btn-primary" onclick="saveSettings()">Save</button>
+      </div>
+      <div id="settings-msg" class="hidden"></div>
+    </div>
+  </div>
+
+  <!-- ── IMPORT ── -->
+  <div id="screen-import" class="screen">
+    <div class="screen-card">
+      <h1>Select Photo Folder</h1>
+      <p class="screen-hint">Choose the folder containing the photos for this inventory job.</p>
+
+      <div class="folder-zone" id="folder-zone" onclick="browseFolder()">
+        <div class="folder-icon">&#128193;</div>
+        <div id="folder-label" class="folder-label">Click to browse for folder</div>
+        <div id="folder-count" class="folder-count hidden"></div>
+      </div>
+
+      <div id="import-thumbs-wrap" class="hidden">
+        <p class="thumb-strip-label">Preview</p>
+        <div id="import-thumbs" class="thumb-strip-small"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="goHome()">&#8592; Back</button>
+        <button class="btn-primary" id="btn-import-continue" disabled onclick="confirmImport()">
+          Continue &#8594;
+        </button>
+      </div>
+      <div id="import-error" class="error-msg hidden"></div>
+    </div>
+  </div>
+
+  <!-- ── GROUP ── -->
+  <div id="screen-group" class="screen">
+    <div class="group-header">
+      <div>
+        <h1>Review Photo Groups</h1>
+        <p class="screen-hint">
+          Each photo is its own item by default.
+          Click <strong>&#8853;</strong> between photos to merge multiple shots of the same item into one.
+        </p>
+      </div>
+      <div class="group-counter-wrap">
+        <div class="group-counter" id="group-counter">— items</div>
+        <div class="group-counter-sub" id="group-counter-sub"></div>
+      </div>
+    </div>
+
+    <div class="filmstrip-wrap">
+      <div class="filmstrip" id="filmstrip"></div>
+    </div>
+
+    <div class="btn-row btn-row-bottom">
+      <button class="btn-secondary" onclick="goHome()">&#8592; Back</button>
+      <button class="btn-primary" onclick="confirmGroups()">Continue to Process &#8594;</button>
+    </div>
+  </div>
+
+  <!-- ── PROCESS ── -->
+  <div id="screen-process" class="screen">
+    <div class="screen-card process-card">
+      <h1>Process Items</h1>
+
+      <div id="process-ready">
+        <div class="process-estimate" id="process-estimate"></div>
+        <p class="screen-hint">
+          Claude AI will identify each item and extract any visible product information.
+          This runs automatically — just click Start.
+        </p>
+        <button class="btn-primary btn-large" onclick="startProcessing()">Start Processing</button>
+      </div>
+
+      <div id="process-running" class="hidden">
+        <div class="process-current-wrap">
+          <img id="process-current-thumb" class="process-thumb" src="" alt="">
+          <div>
+            <div class="process-status-label">Identifying...</div>
+            <div class="process-item-label" id="process-item-label">—</div>
+          </div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+        </div>
+        <div class="progress-text" id="progress-text">0 of 0</div>
+      </div>
+
+      <div id="process-done" class="hidden">
+        <div class="process-done-msg">&#10003; Processing complete!</div>
+        <button class="btn-primary btn-large" onclick="goToReview()">Review Items &#8594;</button>
+      </div>
+
+      <div id="process-error" class="error-msg hidden"></div>
+    </div>
+  </div>
+
+  <!-- ── REVIEW ── -->
+  <div id="screen-review" class="screen">
+    <div id="processing-banner" class="processing-banner hidden">
+      <span id="processing-banner-text">Processing 0 of 0 items — results appear below as they complete.</span>
+      <div class="processing-mini-bar-wrap">
+        <div class="processing-mini-bar" id="processing-mini-bar"></div>
+      </div>
+    </div>
+    <div class="review-toolbar">
+      <div class="review-stats" id="review-stats"></div>
+      <div class="review-filters">
+        <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">All</button>
+        <button class="filter-btn" id="filter-attention" onclick="setFilter('attention')">Needs Attention</button>
+        <button class="filter-btn" id="filter-missing" onclick="setFilter('missing')">Missing Price / Age</button>
+      </div>
+      <div class="review-actions">
+        <button class="btn-secondary btn-small" id="btn-search-all" onclick="searchAllPrices()" title="Auto-fill price suggestions for all items">&#128269; Search All Prices</button>
+        <button class="btn-primary" onclick="exportInventory()">Export to Excel &#8595;</button>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-bar" id="pagination-bar"></div>
+
+    <div class="table-wrap">
+      <table class="inventory-table" id="inventory-table">
+        <thead>
+          <tr>
+            <th class="col-photo">Photo</th>
+            <th class="col-category">Category</th>
+            <th class="col-manufacturer">Manufacturer</th>
+            <th class="col-item">Item</th>
+            <th class="col-model">Model / Serial #</th>
+            <th class="col-qty">Qty</th>
+            <th class="col-price">Price</th>
+            <th class="col-total">Total</th>
+            <th class="col-age">Age</th>
+          </tr>
+        </thead>
+        <tbody id="review-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar" id="pagination-bar-bottom"></div>
+  </div>
+
+</main>
+
+<!-- ══════════════════════════ LIGHTBOX ══════════════════════════════════ -->
+<div id="lightbox" class="lightbox hidden" onclick="closeLightbox(event)">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <div class="lightbox-photos" id="lightbox-photos"></div>
+    <div class="lightbox-label" id="lightbox-label"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ TOAST ═════════════════════════════════════ -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
